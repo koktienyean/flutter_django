@@ -1,0 +1,16 @@
+Django>=3.1
+psycopg2-binary
+requests
+python3-memcached
+gunicorn
+django-admin-tools
+uritemplate
+celery[redis]
+redis
+Pillow
+firebase_admin
+djangorestframework-xml
+djangorestframework
+stripe
+channels
+channels_redis

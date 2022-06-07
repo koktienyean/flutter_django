@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  django_redis:
+    restart: always
+    image: redis:alpine
+    env_file:
+      - .env-redis.yaml
+      - .env-common.yaml
+    expose:
+      - 6379
+    
+  django_cache:
+    restart: always
+    image: memcached
+    env_file:
+      - .env-memcache.yaml
+      - .env-common.yaml
+
+    expose:
+      - 11211
+
+    entrypoint:
+      - memcached
+      - -m 64
+
+  django_db:
+    restart: always
+    image: postgres:12.8-alpine3.14
+    volumes:
+      - "/var/lib/postgresql/django_project/data/pgdata/:/var/lib/postgresql/data/pgdata/"
+    env_file:
+      - .env-db.yaml  
+      - .env-common.yaml
+    expose:
+      - 5432
+
+  django_project:
+    restart: always
+    volumes:
+      - "./django_project/:/home/django_project/"
+
+    build:
+      context: ./django_docker
+      dockerfile: Dockerfile
+    command: bash -c /home/django_project/entrypoint.sh
+    expose:
+      - 8001
+
+    env_file:
+      - .env-db.yaml
+      - .env-api.yaml
+      - .env-redis.yaml
+      - .env-memcache.yaml
+      - .env-common.yaml
+
+    depends_on:
+      - django_cache
+      - django_redis
+
+  nginx_static_server:
+    restart: always
+    build:
+      context: ./nginx_server
+      dockerfile: Dockerfile
+
+    env_file:
+      - .env-nginx.yaml
+      - .env-common.yaml
+      - .env-api.yaml
+
+    volumes:
+      - "./django_project/:/home/django_project/"
+    ports:
+      - 9060:80
+
+    depends_on:
+      - django_project
+      - django_cache
+      - django_redis
+
+volumes:
+  static_volume:
+  media_volume:
+  datastore_volume:
